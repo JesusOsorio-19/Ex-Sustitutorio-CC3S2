@@ -1,0 +1,13 @@
+# Core dependencias
+networkx
+matplotlib
+pandas
+
+# Testing dependencias
+pytest
+pytest-cov
+pytest-mock
+
+# Code quality dependencias
+black
+flake8
