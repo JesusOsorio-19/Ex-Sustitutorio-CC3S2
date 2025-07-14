@@ -1,0 +1,80 @@
+name: Analisis de Código y Pruebas CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  restore_caches:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Configuracion Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Cache Python dependencias
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+  lint_and_test:
+    needs: restore_caches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Configuracion Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+          
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Linting con Black y Flake8
+        run: |
+          black --check src/ tests/
+          flake8 --max-complexity 10 src/
+          
+      - name: Run tests
+        run: |
+          pytest --cov=src --cov-report=term-missing --cov-fail-under=90
+          
+
+  build_deploy:
+    needs: lint_and_test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Restore pip cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        
+      - name: Build reports
+        run: |
+          chmod +x run.sh
+          run.sh
+          
